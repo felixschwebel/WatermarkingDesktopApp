@@ -1,3 +1,5 @@
+# example.jpg by Jonny Gios from unsplash.com
+
 import tkinter
 from tkinter import ttk
 import sys
