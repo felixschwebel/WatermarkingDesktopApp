@@ -7,11 +7,13 @@ from PIL import Image, ImageDraw, ImageTk
 
 # Apperance Configurations
 FONT = ('SF Pro', 18, "bold")
+WATERMARK_FONT = ('SF Pro', 24, "bold")
 BG = 'white'
 FG = '#565656'
 PAD = 30
 CANVAS_HEIGHT = 500
 CANVAS_WIDTH = 800
+WATERMARK_EDGE_DISTANCE = 20
 
 # Window
 window = tkinter.Tk()
@@ -33,7 +35,38 @@ def download_image():
 
 
 def preview_picture():
-    pass
+    global text_container
+    canvas.delete(text_container)
+
+    watermark_pos = position.get()
+    # 'top left'
+    if watermark_pos == 'top left':
+        width = WATERMARK_EDGE_DISTANCE
+        height = WATERMARK_EDGE_DISTANCE
+        anchor = tkinter.NW
+    # 'top right'
+    elif watermark_pos == 'top right':
+        width = USER_IMG_WIDTH-WATERMARK_EDGE_DISTANCE
+        height = WATERMARK_EDGE_DISTANCE
+        anchor = tkinter.NE
+    # 'bottom left'
+    elif watermark_pos == 'bottom left':
+        width = WATERMARK_EDGE_DISTANCE
+        height = USER_IMG_HEIGHT-WATERMARK_EDGE_DISTANCE
+        anchor = tkinter.SW
+    # 'bottom right'
+    elif watermark_pos == 'bottom right':
+        width = USER_IMG_WIDTH-WATERMARK_EDGE_DISTANCE
+        height = USER_IMG_HEIGHT-WATERMARK_EDGE_DISTANCE
+        anchor = tkinter.SE
+    # 'center'
+    else:
+        width = int(USER_IMG_WIDTH / 2)
+        height = int(USER_IMG_HEIGHT / 2)
+        anchor = tkinter.CENTER
+
+    text_container = canvas.create_text(width, height, anchor=anchor,
+                                        text=personal_watermark.get(), font=WATERMARK_FONT)
 
 
 def get_file():
@@ -46,14 +79,25 @@ def get_file():
 
 
 def prepare_img(file_path):
+    global USER_IMG_WIDTH, USER_IMG_HEIGHT
     raw_img = Image.open(file_path)
     resize_factor = 1
     while raw_img.width > CANVAS_WIDTH or raw_img.height > CANVAS_HEIGHT:
         resize_factor -= 0.01
-        raw_img = raw_img.resize((int(raw_img.width * resize_factor), int(raw_img.height * resize_factor)))
+        USER_IMG_WIDTH = int(raw_img.width * resize_factor)
+        USER_IMG_HEIGHT = int(raw_img.height * resize_factor)
+        raw_img = raw_img.resize((USER_IMG_WIDTH, USER_IMG_HEIGHT))
     final_img = ImageTk.PhotoImage(raw_img)
     return final_img
 
+
+# ---------------------- User Variables ----------------------
+USER_IMG = None
+USER_IMG_WIDTH = CANVAS_WIDTH
+USER_IMG_HEIGHT = CANVAS_HEIGHT
+USER_TEXT = None
+USER_TEXT_X = None
+USER_TEXT_Y = None
 
 # ---------------------------- UI ----------------------------
 # Example Image
@@ -61,11 +105,11 @@ canvas = tkinter.Canvas(width=CANVAS_WIDTH, height=CANVAS_HEIGHT,
                         background=BG, borderwidth=0, highlightthickness=0)
 photo_img = tkinter.PhotoImage(file='start.png')
 
-# User Image GLOBAL Variable
-USER_IMG = None
 
+# User Image
 img_container = canvas.create_image(int(CANVAS_WIDTH/2), int(CANVAS_HEIGHT/2),
                                     image=photo_img, anchor=tkinter.CENTER)
+text_container = canvas.create_text(int(CANVAS_WIDTH/2), int(CANVAS_HEIGHT/2), text='')
 canvas.grid(column=0, row=1, columnspan=3)
 
 
@@ -77,6 +121,21 @@ text1.grid(column=0, row=2, sticky=tkinter.W, pady=PAD)
 text2 = tkinter.Label(text='Position')
 text2.config(bg=BG, fg=FG, font=FONT)
 text2.grid(column=0, row=3, sticky=tkinter.W, pady=PAD)
+
+
+# Entry
+personal_watermark = tkinter.Entry(width=42)
+personal_watermark.grid(column=1, row=2, columnspan=2, sticky=tkinter.W)
+
+position = tkinter.ttk.Combobox(width=15, state='readonly')
+position['values'] = (
+    'top left',
+    'top right',
+    'bottom left',
+    'bottom right',
+    'center',
+)
+position.grid(column=1, row=3, sticky=tkinter.W)
 
 
 # Buttons
@@ -91,22 +150,6 @@ download.grid(column=2, row=0, sticky=tkinter.E, pady=PAD)
 preview = tkinter.Button(text='Preview', command=preview_picture)
 preview.config(font=FONT, fg=FG, bd=0, relief='flat', pady=5)
 preview.grid(column=2, row=3, sticky=tkinter.E)
-
-
-# Entry
-personal_watermark = tkinter.Entry(width=42)
-personal_watermark.grid(column=1, row=2, columnspan=2, sticky=tkinter.W)
-personal_watermark.focus()
-
-position = tkinter.ttk.Combobox(width=15, state='readonly')
-position['values'] = (
-    'top left',
-    'top right',
-    'bottom left',
-    'bottom right',
-    'center',
-)
-position.grid(column=1, row=3, sticky=tkinter.W)
 
 
 window.mainloop()
