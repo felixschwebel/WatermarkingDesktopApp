@@ -2,7 +2,7 @@
 
 import tkinter
 from tkinter import ttk, filedialog
-from PIL import Image, ImageDraw, ImageTk
+from PIL import Image, ImageDraw, ImageTk, ImageFont
 
 # Apperance Configurations
 FONT = ('SF Pro', 18, "bold")
@@ -11,7 +11,7 @@ FG = '#565656'
 PAD = 20
 CANVAS_HEIGHT = 500
 CANVAS_WIDTH = 800
-WATERMARK_EDGE_DISTANCE = 35
+WATERMARK_EDGE_DISTANCE = 25
 
 # Window
 window = tkinter.Tk()
@@ -23,100 +23,145 @@ window.resizable(False, False)
 
 # ---------------------------- Functions ----------------------------
 def upload_image():
-    global text_container
+    global text_container, USER_IMG_RESIZED, RAW_IMG
     canvas.delete(text_container)
-    global USER_IMG
-    USER_IMG = prepare_img(get_file())
-    canvas.itemconfig(img_container, image=USER_IMG)
+    USER_IMG_RESIZED = prepare_img(get_file())
+    RAW_IMG = Image.open(USER_IMG_FILE)
+    canvas.itemconfig(img_container, image=USER_IMG_RESIZED)
 
 
 def download_image():
-    pass
+    preview_picture()
+    with Image.open(USER_IMG_FILE).convert("RGBA") as base:
+        # make a blank image for the text, initialized to transparent text color
+        txt = Image.new("RGBA", base.size, (255, 255, 255, 0))
+        size_compensation = int(USER_SIZE/RESIZE_FACTOR)
+        fnt = ImageFont.truetype(USER_FONT, size_compensation)
+        # drawing context
+        d = ImageDraw.Draw(txt)
+        d.text((USER_IMG_X, USER_IMG_Y), anchor=USER_IMG_ANCHOR,
+               text=USER_TEXT, font=fnt, fill=USER_COLOR)
+        new_image = Image.alpha_composite(base, txt)
+        new_image.show()
 
 
 def preview_picture():
-    global text_container
+    global text_container, USER_TEXT, USER_IMG_X, USER_IMG_Y, USER_IMG_ANCHOR
+    # Delete any previous watermarks
     canvas.delete(text_container)
+
+    USER_TEXT = personal_watermark.get()
 
     # Get the position the user selected
     watermark_pos = position.get()
+
     # 'top left'
     if watermark_pos == 'top left':
         width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2) + WATERMARK_EDGE_DISTANCE
         height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2) + WATERMARK_EDGE_DISTANCE
         anchor = tkinter.NW
+
+        USER_IMG_X = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+        USER_IMG_Y = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+        USER_IMG_ANCHOR = 'lt'
+
     # 'top right'
     elif watermark_pos == 'top right':
         width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2 + USER_IMG_WIDTH) - WATERMARK_EDGE_DISTANCE
         height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2) + WATERMARK_EDGE_DISTANCE
         anchor = tkinter.NE
+
+        USER_IMG_X = int(RAW_IMG.size[0]-WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+        USER_IMG_Y = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+        USER_IMG_ANCHOR = 'rt'
+
     # 'bottom left'
     elif watermark_pos == 'bottom left':
         width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2) + WATERMARK_EDGE_DISTANCE
         height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2 + USER_IMG_HEIGHT) - WATERMARK_EDGE_DISTANCE
         anchor = tkinter.SW
+
+        USER_IMG_X = int(WATERMARK_EDGE_DISTANCE/RESIZE_FACTOR)
+        USER_IMG_Y = int(RAW_IMG.size[1]-WATERMARK_EDGE_DISTANCE/RESIZE_FACTOR)
+        USER_IMG_ANCHOR = 'ls'
+
     # 'bottom right'
     elif watermark_pos == 'bottom right':
         width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2 + USER_IMG_WIDTH) - WATERMARK_EDGE_DISTANCE
         height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2 + USER_IMG_HEIGHT) - WATERMARK_EDGE_DISTANCE
         anchor = tkinter.SE
+
+        USER_IMG_X = int(RAW_IMG.size[0] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+        USER_IMG_Y = int(RAW_IMG.size[1]-WATERMARK_EDGE_DISTANCE/RESIZE_FACTOR)
+        USER_IMG_ANCHOR = 'rs'
+
     # 'center'
     else:
         width = int(CANVAS_WIDTH / 2)
         height = int(CANVAS_HEIGHT / 2)
         anchor = tkinter.CENTER
 
+        USER_IMG_X = int(RAW_IMG.size[0]/2)
+        USER_IMG_Y = int(RAW_IMG.size[1]/2)
+        USER_IMG_ANCHOR = 'mm'
+
     # Get the size, color and type of the font
+    global USER_SIZE, USER_COLOR, USER_FONT
+
     if text_size.get() != '':
-        size = int(text_size.get())
-    else:
-        size = 24
+        USER_SIZE = int(text_size.get())
 
     if text_color.get() != '':
-        color = text_color.get()
-    else:
-        color = "black"
+        USER_COLOR = text_color.get()
 
     if text_font.get() != '':
-        font = text_font.get()
-    else:
-        font = 'SF Pro'
+        USER_FONT = text_font.get()
 
     text_container = canvas.create_text(width, height, anchor=anchor,
-                                        text=personal_watermark.get(),
-                                        font=(font, size, 'normal'),
-                                        fill=color)
+                                        text=USER_TEXT,
+                                        font=(USER_FONT, USER_SIZE, 'normal'),
+                                        fill=USER_COLOR)
 
 
 def get_file():
+    global USER_IMG_FILE
     file_path = filedialog.askopenfilename(
         initialdir="/",
         title='Select your Image',
         filetypes=[('Image files', '*.jpg'), ('Image files', '*.png')]
     )
+    USER_IMG_FILE = file_path
     return file_path
 
 
 def prepare_img(file_path):
-    global USER_IMG_WIDTH, USER_IMG_HEIGHT
-    raw_img = Image.open(file_path)
-    resize_factor = 1
-    while raw_img.width > CANVAS_WIDTH or raw_img.height > CANVAS_HEIGHT:
-        resize_factor -= 0.01
-        USER_IMG_WIDTH = int(raw_img.width * resize_factor)
-        USER_IMG_HEIGHT = int(raw_img.height * resize_factor)
-        raw_img = raw_img.resize((USER_IMG_WIDTH, USER_IMG_HEIGHT))
-    final_img = ImageTk.PhotoImage(raw_img)
+    global USER_IMG_WIDTH, USER_IMG_HEIGHT, RESIZE_FACTOR
+    factor = 1
+    resize_img = Image.open(file_path)
+    while resize_img.width > CANVAS_WIDTH or resize_img.height > CANVAS_HEIGHT:
+        factor -= 0.01
+        USER_IMG_WIDTH = int(resize_img.width * factor)
+        USER_IMG_HEIGHT = int(resize_img.height * factor)
+        RESIZE_FACTOR *= factor
+        resize_img = resize_img.resize((USER_IMG_WIDTH, USER_IMG_HEIGHT))
+    final_img = ImageTk.PhotoImage(resize_img)
     return final_img
 
 
 # ---------------------- User Variables ----------------------
-USER_IMG = None
+USER_IMG_FILE = 'start.png'
+RAW_IMG = Image.open(USER_IMG_FILE)
+USER_IMG_RESIZED = None
+RESIZE_FACTOR = 1
 USER_IMG_WIDTH = CANVAS_WIDTH
 USER_IMG_HEIGHT = CANVAS_HEIGHT
-USER_TEXT = None
-USER_TEXT_X = None
-USER_TEXT_Y = None
+USER_TEXT = ''
+USER_COLOR = 'black'
+USER_SIZE = 24
+USER_FONT = 'Arial'
+USER_IMG_X = 0
+USER_IMG_Y = 0
+USER_IMG_ANCHOR = ''
 
 # ---------------------------- UI ----------------------------
 # Example Image
@@ -169,7 +214,6 @@ text_font = tkinter.ttk.Combobox(width=15, state='readonly')
 text_font['values'] = (
     'Arial',
     'Courier',
-    'SF Pro',
     'Times New Roman',
 )
 text_font.grid(column=3, row=3, sticky=tkinter.W)
@@ -179,19 +223,15 @@ text_color['values'] = (
     'black',
     'white',
     'gray',
-    'gray20',
-    'gray30',
-    'gray40',
-    'gray50',
-    'gray60',
-    'gray70',
-    'gray80',
-    'gray90',
+    'red',
+    'yellow',
+    'green',
+    'blue'
 )
 text_color.grid(column=1, row=4, sticky=tkinter.W)
 
 text_size = tkinter.ttk.Combobox(width=15, state='readonly')
-text_size['values'] = (14, 16, 18, 20, 22, 24, 28, 30, 36, 40, 50, 60)
+text_size['values'] = (6, 8, 10, 14, 16, 18, 20, 22, 24, 28, 30, 36, 40, 50, 60)
 text_size.grid(column=3, row=4, sticky=tkinter.W)
 
 # Buttons
