@@ -2,7 +2,6 @@
 
 import tkinter
 from tkinter import ttk, filedialog
-import sys
 from PIL import Image, ImageDraw, ImageTk
 
 # Apperance Configurations
@@ -13,7 +12,7 @@ FG = '#565656'
 PAD = 30
 CANVAS_HEIGHT = 500
 CANVAS_WIDTH = 800
-WATERMARK_EDGE_DISTANCE = 20
+WATERMARK_EDGE_DISTANCE = 35
 
 # Window
 window = tkinter.Tk()
@@ -25,6 +24,8 @@ window.resizable(False, False)
 
 # ---------------------------- Functions ----------------------------
 def upload_image():
+    global text_container
+    canvas.delete(text_container)
     global USER_IMG
     USER_IMG = prepare_img(get_file())
     canvas.itemconfig(img_container, image=USER_IMG)
@@ -37,32 +38,34 @@ def download_image():
 def preview_picture():
     global text_container
     canvas.delete(text_container)
+    print(USER_IMG_WIDTH)
+    print(USER_IMG_HEIGHT)
 
     watermark_pos = position.get()
     # 'top left'
     if watermark_pos == 'top left':
-        width = WATERMARK_EDGE_DISTANCE
-        height = WATERMARK_EDGE_DISTANCE
+        width = int((CANVAS_WIDTH-USER_IMG_WIDTH)/2)+WATERMARK_EDGE_DISTANCE
+        height = int((CANVAS_HEIGHT-USER_IMG_HEIGHT)/2)+WATERMARK_EDGE_DISTANCE
         anchor = tkinter.NW
     # 'top right'
     elif watermark_pos == 'top right':
-        width = USER_IMG_WIDTH-WATERMARK_EDGE_DISTANCE
-        height = WATERMARK_EDGE_DISTANCE
+        width = int((CANVAS_WIDTH-USER_IMG_WIDTH)/2+USER_IMG_WIDTH)-WATERMARK_EDGE_DISTANCE
+        height = int((CANVAS_HEIGHT-USER_IMG_HEIGHT)/2)+WATERMARK_EDGE_DISTANCE
         anchor = tkinter.NE
     # 'bottom left'
     elif watermark_pos == 'bottom left':
-        width = WATERMARK_EDGE_DISTANCE
-        height = USER_IMG_HEIGHT-WATERMARK_EDGE_DISTANCE
+        width = int((CANVAS_WIDTH-USER_IMG_WIDTH)/2)+WATERMARK_EDGE_DISTANCE
+        height = int((CANVAS_HEIGHT-USER_IMG_HEIGHT)/2+USER_IMG_HEIGHT)-WATERMARK_EDGE_DISTANCE
         anchor = tkinter.SW
     # 'bottom right'
     elif watermark_pos == 'bottom right':
-        width = USER_IMG_WIDTH-WATERMARK_EDGE_DISTANCE
-        height = USER_IMG_HEIGHT-WATERMARK_EDGE_DISTANCE
+        width = int((CANVAS_WIDTH-USER_IMG_WIDTH)/2+USER_IMG_WIDTH)-WATERMARK_EDGE_DISTANCE
+        height = int((CANVAS_HEIGHT-USER_IMG_HEIGHT)/2+USER_IMG_HEIGHT)-WATERMARK_EDGE_DISTANCE
         anchor = tkinter.SE
     # 'center'
     else:
-        width = int(USER_IMG_WIDTH / 2)
-        height = int(USER_IMG_HEIGHT / 2)
+        width = int(CANVAS_WIDTH / 2)
+        height = int(CANVAS_HEIGHT / 2)
         anchor = tkinter.CENTER
 
     text_container = canvas.create_text(width, height, anchor=anchor,
