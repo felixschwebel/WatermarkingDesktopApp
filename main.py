@@ -23,8 +23,9 @@ window.resizable(False, False)
 
 # ---------------------------- Functions ----------------------------
 def upload_image():
-    global text_container, USER_IMG_RESIZED, RAW_IMG
+    global text_container, USER_IMG_RESIZED, RAW_IMG, RESIZE_FACTOR
     canvas.delete(text_container)
+    RESIZE_FACTOR = 1
     try:
         USER_IMG_RESIZED = prepare_img(get_file())
         RAW_IMG = Image.open(USER_IMG_FILE)
@@ -58,8 +59,11 @@ def download_image():
                 )
                 # Convert the RGBA into RBG to save as jpeg
                 rgb_img = new_image.convert('RGB')
-                rgb_img.save(f'{directory}/{new_file_name}', 'JPEG')
-                messagebox.showinfo('Success!', 'Image saved successfully!')
+                try:
+                    rgb_img.save(f'{directory}/{new_file_name}', 'JPEG')
+                    messagebox.showinfo('Success!', 'Image saved successfully!')
+                except OSError:
+                    pass
         except AttributeError:
             pass
     except ValueError:
@@ -180,7 +184,7 @@ def prepare_img(file_path):
 USER_IMG_FILE = ''
 RAW_IMG = None
 USER_IMG_RESIZED = None
-RESIZE_FACTOR = 1
+RESIZE_FACTOR = None
 USER_IMG_WIDTH = CANVAS_WIDTH
 USER_IMG_HEIGHT = CANVAS_HEIGHT
 USER_TEXT = ''
