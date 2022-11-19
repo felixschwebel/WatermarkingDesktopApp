@@ -1,7 +1,7 @@
 # example.jpg by Jonny Gios from unsplash.com
 
 import tkinter
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageDraw, ImageTk, ImageFont
 
 # Apperance Configurations
@@ -15,7 +15,7 @@ WATERMARK_EDGE_DISTANCE = 25
 
 # Window
 window = tkinter.Tk()
-window.title('Watermarking App')
+window.title('Watermarker')
 window.config(bg=BG, padx=PAD)
 window.minsize()
 window.resizable(False, False)
@@ -35,15 +35,26 @@ def download_image():
     with Image.open(USER_IMG_FILE).convert("RGBA") as base:
         # make a blank image for the text, initialized to transparent text color
         txt = Image.new("RGBA", base.size, (255, 255, 255, 0))
-        size_compensation = int(USER_SIZE/RESIZE_FACTOR)
+        size_compensation = int(USER_SIZE / RESIZE_FACTOR)
         fnt = ImageFont.truetype(USER_FONT, size_compensation)
         # drawing context
-        d = ImageDraw.Draw(txt)
-        d.text((USER_IMG_X, USER_IMG_Y), anchor=USER_IMG_ANCHOR,
-               text=USER_TEXT, font=fnt, fill=USER_COLOR)
+        create_watermark = ImageDraw.Draw(txt)
+        create_watermark.text((USER_IMG_X, USER_IMG_Y), anchor=USER_IMG_ANCHOR,
+                              text=USER_TEXT, font=fnt, fill=USER_COLOR)
         new_image = Image.alpha_composite(base, txt)
-        new_image.show()
+        # new_image.show()
 
+        # Get filename and add 'watermarked'
+        new_file_name = f"watermarked_{USER_IMG_FILE.split('/')[-1]}"
+        # Choose directory and save image
+        directory = filedialog.askdirectory(
+            initialdir='/',
+            title='Select folder to save your picture'
+        )
+        # Convert the RGBA into RBG to save as jpeg
+        rgb_img = new_image.convert('RGB')
+        rgb_img.save(f'{directory}/{new_file_name}', 'JPEG')
+        messagebox.showinfo('Success!', 'Image saved successfully!')
 
 def preview_picture():
     global text_container, USER_TEXT, USER_IMG_X, USER_IMG_Y, USER_IMG_ANCHOR
@@ -71,7 +82,7 @@ def preview_picture():
         height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2) + WATERMARK_EDGE_DISTANCE
         anchor = tkinter.NE
 
-        USER_IMG_X = int(RAW_IMG.size[0]-WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+        USER_IMG_X = int(RAW_IMG.size[0] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
         USER_IMG_Y = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
         USER_IMG_ANCHOR = 'rt'
 
@@ -81,8 +92,8 @@ def preview_picture():
         height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2 + USER_IMG_HEIGHT) - WATERMARK_EDGE_DISTANCE
         anchor = tkinter.SW
 
-        USER_IMG_X = int(WATERMARK_EDGE_DISTANCE/RESIZE_FACTOR)
-        USER_IMG_Y = int(RAW_IMG.size[1]-WATERMARK_EDGE_DISTANCE/RESIZE_FACTOR)
+        USER_IMG_X = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+        USER_IMG_Y = int(RAW_IMG.size[1] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
         USER_IMG_ANCHOR = 'ls'
 
     # 'bottom right'
@@ -92,7 +103,7 @@ def preview_picture():
         anchor = tkinter.SE
 
         USER_IMG_X = int(RAW_IMG.size[0] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_Y = int(RAW_IMG.size[1]-WATERMARK_EDGE_DISTANCE/RESIZE_FACTOR)
+        USER_IMG_Y = int(RAW_IMG.size[1] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
         USER_IMG_ANCHOR = 'rs'
 
     # 'center'
@@ -101,8 +112,8 @@ def preview_picture():
         height = int(CANVAS_HEIGHT / 2)
         anchor = tkinter.CENTER
 
-        USER_IMG_X = int(RAW_IMG.size[0]/2)
-        USER_IMG_Y = int(RAW_IMG.size[1]/2)
+        USER_IMG_X = int(RAW_IMG.size[0] / 2)
+        USER_IMG_Y = int(RAW_IMG.size[1] / 2)
         USER_IMG_ANCHOR = 'mm'
 
     # Get the size, color and type of the font
@@ -199,6 +210,7 @@ text_size.grid(column=2, row=4, sticky=tkinter.W, pady=PAD)
 # Entry
 personal_watermark = tkinter.Entry(width=42)
 personal_watermark.grid(column=1, row=2, columnspan=2, sticky=tkinter.W)
+personal_watermark.focus()
 
 position = tkinter.ttk.Combobox(width=15, state='readonly')
 position['values'] = (
@@ -213,7 +225,10 @@ position.grid(column=1, row=3, sticky=tkinter.W)
 text_font = tkinter.ttk.Combobox(width=15, state='readonly')
 text_font['values'] = (
     'Arial',
+    'Arial Black',
+    'Chalkduster',
     'Courier',
+    'SignPainter',
     'Times New Roman',
 )
 text_font.grid(column=3, row=3, sticky=tkinter.W)
