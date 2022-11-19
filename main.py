@@ -25,113 +25,130 @@ window.resizable(False, False)
 def upload_image():
     global text_container, USER_IMG_RESIZED, RAW_IMG
     canvas.delete(text_container)
-    USER_IMG_RESIZED = prepare_img(get_file())
-    RAW_IMG = Image.open(USER_IMG_FILE)
-    canvas.itemconfig(img_container, image=USER_IMG_RESIZED)
+    try:
+        USER_IMG_RESIZED = prepare_img(get_file())
+        RAW_IMG = Image.open(USER_IMG_FILE)
+        canvas.itemconfig(img_container, image=USER_IMG_RESIZED)
+    except AttributeError:
+        pass
 
 
 def download_image():
     preview_picture()
-    with Image.open(USER_IMG_FILE).convert("RGBA") as base:
-        # make a blank image for the text, initialized to transparent text color
-        txt = Image.new("RGBA", base.size, (255, 255, 255, 0))
-        size_compensation = int(USER_SIZE / RESIZE_FACTOR)
-        fnt = ImageFont.truetype(USER_FONT, size_compensation)
-        # drawing context
-        create_watermark = ImageDraw.Draw(txt)
-        create_watermark.text((USER_IMG_X, USER_IMG_Y), anchor=USER_IMG_ANCHOR,
-                              text=USER_TEXT, font=fnt, fill=USER_COLOR)
-        new_image = Image.alpha_composite(base, txt)
-        # new_image.show()
+    try:
+        try:
+            with Image.open(USER_IMG_FILE).convert("RGBA") as base:
+                # make a blank image for the text, initialized to transparent text color
+                txt = Image.new("RGBA", base.size, (255, 255, 255, 0))
+                size_compensation = int(USER_SIZE / RESIZE_FACTOR)
+                fnt = ImageFont.truetype(USER_FONT, size_compensation)
+                # drawing context
+                create_watermark = ImageDraw.Draw(txt)
+                create_watermark.text((USER_IMG_X, USER_IMG_Y), anchor=USER_IMG_ANCHOR,
+                                      text=USER_TEXT, font=fnt, fill=USER_COLOR)
+                new_image = Image.alpha_composite(base, txt)
+                # new_image.show()
 
-        # Get filename and add 'watermarked'
-        new_file_name = f"watermarked_{USER_IMG_FILE.split('/')[-1]}"
-        # Choose directory and save image
-        directory = filedialog.askdirectory(
-            initialdir='/',
-            title='Select folder to save your picture'
-        )
-        # Convert the RGBA into RBG to save as jpeg
-        rgb_img = new_image.convert('RGB')
-        rgb_img.save(f'{directory}/{new_file_name}', 'JPEG')
-        messagebox.showinfo('Success!', 'Image saved successfully!')
+                # Get filename and add 'watermarked'
+                new_file_name = f"watermarked_{USER_IMG_FILE.split('/')[-1]}"
+                # Choose directory and save image
+                directory = filedialog.askdirectory(
+                    initialdir='/',
+                    title='Select folder to save your picture'
+                )
+                # Convert the RGBA into RBG to save as jpeg
+                rgb_img = new_image.convert('RGB')
+                rgb_img.save(f'{directory}/{new_file_name}', 'JPEG')
+                messagebox.showinfo('Success!', 'Image saved successfully!')
+        except AttributeError:
+            pass
+    except ValueError:
+        pass
+
 
 def preview_picture():
-    global text_container, USER_TEXT, USER_IMG_X, USER_IMG_Y, USER_IMG_ANCHOR
-    # Delete any previous watermarks
-    canvas.delete(text_container)
+    if USER_IMG_FILE != '':
+        global text_container, USER_TEXT, USER_IMG_X, USER_IMG_Y, USER_IMG_ANCHOR
+        # Delete any previous watermarks
+        canvas.delete(text_container)
 
-    USER_TEXT = personal_watermark.get()
+        USER_TEXT = personal_watermark.get()
 
-    # Get the position the user selected
-    watermark_pos = position.get()
+        # Get the position the user selected
+        watermark_pos = position.get()
 
-    # 'top left'
-    if watermark_pos == 'top left':
-        width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2) + WATERMARK_EDGE_DISTANCE
-        height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2) + WATERMARK_EDGE_DISTANCE
-        anchor = tkinter.NW
+        # 'top left'
+        if watermark_pos == 'top left':
+            width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2) + WATERMARK_EDGE_DISTANCE
+            height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2) + WATERMARK_EDGE_DISTANCE
+            anchor = tkinter.NW
 
-        USER_IMG_X = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_Y = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_ANCHOR = 'lt'
+            USER_IMG_X = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_Y = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_ANCHOR = 'lt'
 
-    # 'top right'
-    elif watermark_pos == 'top right':
-        width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2 + USER_IMG_WIDTH) - WATERMARK_EDGE_DISTANCE
-        height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2) + WATERMARK_EDGE_DISTANCE
-        anchor = tkinter.NE
+        # 'top right'
+        elif watermark_pos == 'top right':
+            width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2 + USER_IMG_WIDTH) - WATERMARK_EDGE_DISTANCE
+            height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2) + WATERMARK_EDGE_DISTANCE
+            anchor = tkinter.NE
 
-        USER_IMG_X = int(RAW_IMG.size[0] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_Y = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_ANCHOR = 'rt'
+            USER_IMG_X = int(RAW_IMG.size[0] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_Y = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_ANCHOR = 'rt'
 
-    # 'bottom left'
-    elif watermark_pos == 'bottom left':
-        width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2) + WATERMARK_EDGE_DISTANCE
-        height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2 + USER_IMG_HEIGHT) - WATERMARK_EDGE_DISTANCE
-        anchor = tkinter.SW
+        # 'bottom left'
+        elif watermark_pos == 'bottom left':
+            width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2) + WATERMARK_EDGE_DISTANCE
+            height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2 + USER_IMG_HEIGHT) - WATERMARK_EDGE_DISTANCE
+            anchor = tkinter.SW
 
-        USER_IMG_X = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_Y = int(RAW_IMG.size[1] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_ANCHOR = 'ls'
+            USER_IMG_X = int(WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_Y = int(RAW_IMG.size[1] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_ANCHOR = 'ls'
 
-    # 'bottom right'
-    elif watermark_pos == 'bottom right':
-        width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2 + USER_IMG_WIDTH) - WATERMARK_EDGE_DISTANCE
-        height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2 + USER_IMG_HEIGHT) - WATERMARK_EDGE_DISTANCE
-        anchor = tkinter.SE
+        # 'bottom right'
+        elif watermark_pos == 'bottom right':
+            width = int((CANVAS_WIDTH - USER_IMG_WIDTH) / 2 + USER_IMG_WIDTH) - WATERMARK_EDGE_DISTANCE
+            height = int((CANVAS_HEIGHT - USER_IMG_HEIGHT) / 2 + USER_IMG_HEIGHT) - WATERMARK_EDGE_DISTANCE
+            anchor = tkinter.SE
 
-        USER_IMG_X = int(RAW_IMG.size[0] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_Y = int(RAW_IMG.size[1] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
-        USER_IMG_ANCHOR = 'rs'
+            USER_IMG_X = int(RAW_IMG.size[0] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_Y = int(RAW_IMG.size[1] - WATERMARK_EDGE_DISTANCE / RESIZE_FACTOR)
+            USER_IMG_ANCHOR = 'rs'
 
-    # 'center'
+        # 'center'
+        else:
+            width = int(CANVAS_WIDTH / 2)
+            height = int(CANVAS_HEIGHT / 2)
+            anchor = tkinter.CENTER
+
+            USER_IMG_X = int(RAW_IMG.size[0] / 2)
+            USER_IMG_Y = int(RAW_IMG.size[1] / 2)
+            USER_IMG_ANCHOR = 'mm'
+
+        # Get the size, color and type of the font
+        global USER_SIZE, USER_COLOR, USER_FONT
+
+        if text_size.get() != '':
+            USER_SIZE = int(text_size.get())
+
+        if text_color.get() != '':
+            USER_COLOR = text_color.get()
+
+        if text_font.get() != '':
+            USER_FONT = text_font.get()
+
+        text_container = canvas.create_text(width, height, anchor=anchor,
+                                            text=USER_TEXT,
+                                            font=(USER_FONT, USER_SIZE, 'normal'),
+                                            fill=USER_COLOR)
+
     else:
-        width = int(CANVAS_WIDTH / 2)
-        height = int(CANVAS_HEIGHT / 2)
-        anchor = tkinter.CENTER
-
-        USER_IMG_X = int(RAW_IMG.size[0] / 2)
-        USER_IMG_Y = int(RAW_IMG.size[1] / 2)
-        USER_IMG_ANCHOR = 'mm'
-
-    # Get the size, color and type of the font
-    global USER_SIZE, USER_COLOR, USER_FONT
-
-    if text_size.get() != '':
-        USER_SIZE = int(text_size.get())
-
-    if text_color.get() != '':
-        USER_COLOR = text_color.get()
-
-    if text_font.get() != '':
-        USER_FONT = text_font.get()
-
-    text_container = canvas.create_text(width, height, anchor=anchor,
-                                        text=USER_TEXT,
-                                        font=(USER_FONT, USER_SIZE, 'normal'),
-                                        fill=USER_COLOR)
+        no_img = messagebox.askquestion('Error', 'You have not uploaded a image yet.\n'
+                                                 'Do you want to upload a image?', icon='question')
+        if no_img == 'yes':
+            upload_image()
 
 
 def get_file():
@@ -160,8 +177,8 @@ def prepare_img(file_path):
 
 
 # ---------------------- User Variables ----------------------
-USER_IMG_FILE = 'start.png'
-RAW_IMG = Image.open(USER_IMG_FILE)
+USER_IMG_FILE = ''
+RAW_IMG = None
 USER_IMG_RESIZED = None
 RESIZE_FACTOR = 1
 USER_IMG_WIDTH = CANVAS_WIDTH
